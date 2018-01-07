@@ -1,0 +1,32 @@
+addons:
+  apt:
+    sources:
+    - avsm
+    packages:
+    - ocaml
+    - ocaml-native-compilers
+    - camlp4-extra
+    - opam
+
+before_install:
+  - ocaml -version
+  - opam --version
+
+install:
+  - opam init -y
+  - eval `opam config env`
+  - opam pin -y add coq 8.7.1
+  - opam repo -y add coq-released https://coq.inria.fr/opam/released
+  - opam install coq-coq2html
+  - coqc --version
+
+script:
+  - make
+
+deploy:
+  provider: pages
+  local_dir: html
+  skip_cleanup: true
+  github_token: $GITHUB_TOKEN
+  on:
+    branch: master

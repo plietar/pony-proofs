@@ -3,3 +3,5 @@
 *.glob
 html/
 *.aux
+Makefile.coq
+Makefile.coq.conf

@@ -1,0 +1,8 @@
+include Makefile.coq
+
+coq2html: $(GLOBFILES) $(VFILES)
+	mkdir -p html
+	coq2html -d html $(GLOBFILES) $(VFILES)
+	cp index.html html
+
+.PHONY: coq2html

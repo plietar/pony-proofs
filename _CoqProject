@@ -1,4 +1,4 @@
--R theories/ Pony
+-R theories/ theories
 theories/Cap.v
 theories/CapGroups.v
 theories/CapSets.v
