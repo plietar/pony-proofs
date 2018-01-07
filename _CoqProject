@@ -1,0 +1,6 @@
+-R theories/ Pony
+theories/Cap.v
+theories/CapGroups.v
+theories/CapSets.v
+theories/Notations.v
+theories/lemmas.v
