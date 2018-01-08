@@ -7,10 +7,10 @@ Require Import CapGroups.
 Require Import Notations.
 
 Ltac unfold_classes := repeat unfold
-  alias, unalias, unG,
+  alias, unalias,
   blob, blob_combine, blob_combine_one,
   elemOf, elemOf_union, elemOf_list, elemOf_bot,
-  READABLE, STABLE, ISO, TRN, REF, VAL, BOX, TAG in *.
+  READABLE, WRITABLE, STABLE, ISO, TRN, REF, VAL, BOX, TAG in *.
 Ltac finish := solve [subst; unfold_classes; tauto].
 
 Lemma lemma1 {A} : forall (x y: A), In x [y] -> x = y.
@@ -141,7 +141,7 @@ Lemma lemma15 : forall λs κ κ' λ,
   (λs ∘ κ') ∈ (G (alias λ)).
 Proof with eauto.
 intros λs κ κ' λ [? ?] ?.
-unfold elemOf, elemOf_capgroup, unG in *.
+unfold elemOf, elemOf_capgroup in *.
 erewrite lemma10; eauto.
 split.
 - eapply lemma5...
@@ -173,7 +173,7 @@ Lemma lemma17 : forall λs κ κ' λ,
   (λs ∘ κ') ∈ (G (alias λ)).
 Proof with eauto.
 intros λs κ κ' λ [? ?] ? ?.
-unfold elemOf, elemOf_capgroup, unG in *.
+unfold elemOf, elemOf_capgroup in *.
 erewrite lemma11; eauto.
 split.
 - eapply lemma5...
@@ -242,7 +242,7 @@ Lemma lemma24: forall (λs: capset) (κ: cap),
   λs ∈ READABLE -> exists κ', (λs ∘ κ) ∈ G(κ').
 Proof.
 intros.
-destruct H as [|[|[|[|]]]].
+destruct_READABLE H.
 all:
   destruct κ eqn:?;
   eassert ((λs ∘ κ) ∈ (G (alias _)))
@@ -262,7 +262,7 @@ Lemma lemma26: forall λs (κ: cap),
 Proof with auto.
 intros.
 unfold STABLE in *.
-destruct H as [|[|[|[|[|[|]]]]]].
+destruct_STABLE H.
 
 1-5: edestruct lemma24 with (λs:=λs);
      [ unfold_classes; unfold READABLE; auto
@@ -284,7 +284,7 @@ Lemma lemma28: forall (λs: capset),
   λs ∈ READABLE -> λs ∘ tag ∈ TAG.
 Proof with auto.
 intros.
-destruct H as [|[|[|[|]]]].
+destruct_READABLE H.
 all:
   eassert ((λs ∘ tag) ∈ (G (alias (C tag))))
     by (eapply lemma15 + eapply lemma17; eauto)...
@@ -294,7 +294,7 @@ Lemma lemma29 : forall λs,
   λs ∈ STABLE -> λs ∘ tag ∈ TAG \/ λs ∘ tag ∈ BOT.
 Proof with finish.
 intros.
-destruct H as [|[|[|[|[|[|]]]]]].
+destruct_STABLE H.
 1-5: left; apply lemma28; unfold READABLE...
 - right; apply lemma22...
 - right; apply lemma23...
@@ -373,7 +373,7 @@ Lemma lemma37 : forall (λs: capset) (κ: cap) (κ': cap),
   λs ∈ STABLE -> λs ∘ κ ∈ G κ' -> λs ∈ READABLE.
 Proof.
 intros.
-destruct H as [|[|[|[|[|[|]]]]]].
+destruct_STABLE H.
 1-5: finish.
 - exfalso; eapply lemma36; [apply H0 | apply lemma22; auto].
 - exfalso; eapply lemma36; [apply H0 | apply lemma23; auto].
@@ -386,7 +386,7 @@ Proof with finish.
 intros.
 assert (λs ∈ READABLE)
   by (eapply lemma37; [eapply lemma25|]; eauto).
-destruct H2 as [|[|[|[|]]]]; try (
+destruct_READABLE H2; try (
   eassert (κ=_) by (eapply lemma9; [apply H | apply H2]); subst κ;
   destruct κ1 eqn:?; (
     eassert (κ' = alias _)
@@ -408,7 +408,7 @@ Qed.
 Lemma lemma40 : forall (λs: capset), λs ∈ READABLE -> exists κ, λs ∈ G κ.
 Proof.
 intros.
-destruct H as [|[|[|[|]]]].
+destruct_READABLE H.
 1-5: eexists _; apply H.
 Qed.
 
@@ -440,7 +440,7 @@ Lemma lemma42 : forall λs (κs: list cap),
   [C ref] ∘ κs ∈ TAG ∪ BOT.
 Proof.
 intros.
-destruct H as [|[|]].
+destruct_WRITABLE H.
 1-2: eapply lemma35; unfold_classes; eauto.
 assert ([C ref] ∘ κs ∈ TAG)
   by (apply lemma41 with (λs:=λs) (κ:=ref); [|apply lemma33|]; auto).
