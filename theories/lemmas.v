@@ -446,3 +446,149 @@ assert ([C ref] ∘ κs ∈ TAG)
   by (apply lemma41 with (λs:=λs) (κ:=ref); [|apply lemma33|]; auto).
 finish.
 Qed.
+
+Hint Constructors compatible.
+
+Lemma lemma43 : forall (κ κ': cap),
+  compatible (C κ) (C κ') ->
+  compatible (unalias κ) (unalias κ').
+Proof.
+intros.
+inversion H; unfold unalias; auto.
+Qed.
+
+Lemma lemma44 : forall (λ λ' λ'': ecap),
+  compatible λ λ' ->
+  subcap λ' λ'' ->
+  compatible λ λ''.
+Proof.
+intros.
+inversion H; subst; inversion H0; subst; auto.
+Qed.
+
+Lemma lemma45 : forall (λ1 λ2: ecap),
+  compatible λ1 λ2 ->
+  compatible λ2 λ1.
+Proof.
+intros.
+inversion H; auto.
+- destruct λ2 as [[]| |]; auto.
+Qed.
+
+Lemma lemma46 : forall (λ1 λ1' λ2 λ2': ecap),
+  compatible λ1 λ2 ->
+  subcap λ1 λ1' ->
+  subcap λ2 λ2' ->
+  compatible λ1' λ2'.
+Proof.
+intros.
+apply lemma44 with λ2; [ apply lemma45 |].
+apply lemma44 with λ1; [ apply lemma45 |].
+all: auto.
+Qed.
+
+Lemma lemma47 : forall (κ κ': cap),
+  compatible (unalias κ) (unalias κ') ->
+  compatible (C κ) (C κ').
+Proof.
+intros.
+destruct κ, κ'; inversion H; auto.
+Qed.
+
+Lemma lemma48 : forall (λs λs': capset) (κ κ': cap),
+  λs ∈ G κ ->
+  λs' ∈ G κ' ->
+  compatible (C κ) (C κ') ->
+  compatible_set λs λs'.
+Proof.
+intros.
+intros λ λ' ? ?.
+apply lemma46 with (unalias κ) (unalias κ') ;
+[ apply lemma43 | apply H | apply H0 ]; auto.
+Qed.
+
+Lemma lemma49 : forall (λs λs': capset) (κ κ': cap),
+  λs ∈ G κ ->
+  λs' ∈ G κ' ->
+  compatible_set λs λs' ->
+  compatible (C κ) (C κ').
+Proof.
+intros.
+apply lemma47.
+apply H1; [ apply H | apply H0 ].
+Qed.
+
+Lemma lemma50 : forall (λs: capset),
+  λs ∈ STABLE -> λs ∈ BOT \/ exists κ, λs ∈ G κ.
+Proof.
+intros.
+destruct_STABLE H;
+solve [ right; eexists _; apply H | auto ].
+Qed.
+
+Lemma lemma52 : forall (λs λs': capset),
+  λs ∈ BOT -> compatible_set λs λs'.
+Proof.
+intros.
+unfold compatible_set.
+unfold_classes.
+intros. subst. inversion H0.
+Qed.
+
+Lemma lemma54 : forall (λs: capset) (λ: ecap),
+  λs ∈ TAG -> λ ∈ λs -> λ = C tag.
+Proof.
+intros.
+assert (subcap (C tag) λ) by (apply H, H0).
+inversion H1. auto.
+Qed.
+
+Lemma lemma55 : forall (λs λs': capset),
+  λs ∈ TAG -> compatible_set λs λs'.
+Proof.
+intros.
+unfold compatible_set.
+intros.
+replace λ with (C tag)
+  by (symmetry; eapply lemma54; eauto).
+apply compatible_tag.
+Qed.
+
+Lemma lemmaB1 : forall (λs: capset)(κs1 κs3 κs4: list cap) (κ κ2: cap),
+  λs ∈ STABLE ->
+  compatible_set (λs ∘ κs4) ([unalias κ] ∘ κs3) ->
+  [unalias κ] ∘ κs3 ∈ ISO ->
+  compatible_set (λs ∘ κs4) ([C ref] ∘ κs1 ∘ κ2 ∘ κs3).
+Proof.
+intros.
+destruct lemma50 with (λs ∘ κs4) as [|[κ1 ?]]; [ apply lemma27; auto | ..].
+- apply lemma52; auto.
+- replace κ1 with tag in *.
+  apply lemma55; auto.
+
+  assert (compatible (C κ1) (C iso)) as Hcompat_κ1_iso by (eapply lemma49; eauto).
+  inversion Hcompat_κ1_iso; subst; auto.
+Qed.
+
+Lemma lemmaB : forall (λs: capset) (λ: ecap) (κs1 κs3 κs4: list cap) (κ κ2: cap),
+  λs ∈ WRITABLE ->
+  (* λ writable -> *)
+  subcap (unalias κ) (C κ2) ->
+  safe_to_write λ κ ->
+  compatible_set (λs ∘ κs4) ([unalias κ] ∘ κs3) ->
+  compatible_set (λs ∘ κs4) ([C ref] ∘ κs1 ∘ κ2 ∘ κs3).
+Proof with finish.
+intros.
+assert ([unalias κ] ∘ κs3 ∈ STABLE) as Hstable_κs3
+  by (apply lemma27, lemma31).
+destruct_STABLE Hstable_κs3.
+
+- (* [unalias κ] ∘ κs3 ∈ ISO *) eapply lemmaB1 with κ...
+- (* [unalias κ] ∘ κs3 ∈ TRN *) admit.
+- (* [unalias κ] ∘ κs3 ∈ REF *) admit.
+- (* [unalias κ] ∘ κs3 ∈ VAL *) admit.
+- (* [unalias κ] ∘ κs3 ∈ BOX *) admit.
+- (* [unalias κ] ∘ κs3 ∈ TAG *) admit.
+- (* [unalias κ] ∘ κs3 ∈ BOT *) admit.
+
+Admitted.

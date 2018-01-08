@@ -145,6 +145,7 @@ Inductive compatible : ecap -> ecap -> Prop :=
 
 | compatible_tag : forall λ, compatible (C tag) λ
 .
+Hint Constructors compatible.
 
 Inductive subcap : ecap -> ecap -> Prop :=
 | subcap_refl : forall λ, subcap λ λ
@@ -173,5 +174,21 @@ Inductive subcap : ecap -> ecap -> Prop :=
 | subcap_trn_tag : subcap (C trn) (C tag)
 (* | subcap_trans : forall λ λ' λ'', subcap λ λ' -> subcap λ' λ'' -> subcap λ λ'' *)
 .
-
 Hint Constructors subcap.
+
+Inductive safe_to_write : ecap -> cap -> Prop :=
+| safe_to_write_isoe : forall κ, safe_to_write iso_eph κ
+| safe_to_write_trne : forall κ, safe_to_write trn_eph κ
+| safe_to_write_ref  : forall κ, safe_to_write (C ref) κ
+
+| safe_to_write_iso_iso : safe_to_write (C iso) iso
+| safe_to_write_iso_val : safe_to_write (C iso) val
+| safe_to_write_iso_tag : safe_to_write (C iso) tag
+
+| safe_to_write_trn_iso : safe_to_write (C trn) iso
+| safe_to_write_trn_trn : safe_to_write (C trn) trn
+| safe_to_write_trn_val : safe_to_write (C trn) val
+| safe_to_write_trn_tag : safe_to_write (C trn) tag
+.
+Hint Constructors safe_to_write.
+
