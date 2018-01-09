@@ -29,3 +29,21 @@ Definition WRITABLE := ISO ∪ TRN ∪ REF.
 Ltac destruct_READABLE H := destruct H as [|[|[|[|]]]].
 Ltac destruct_STABLE H := destruct H as [|[|[|[|[|[|]]]]]].
 Ltac destruct_WRITABLE H := destruct H as [|[|]].
+
+Tactic Notation "destruct_stable" constr(x) "by" tactic(tac) :=
+  assert (x ∈ STABLE) as ?h by tac; destruct h as [|[|[|[|[|[|]]]]]].
+
+Tactic Notation "destruct_stable" constr(x) :=
+  assert (x ∈ STABLE) as ?h; [ | destruct h as [|[|[|[|[|[|]]]]]] ].
+
+Tactic Notation "destruct_readable" constr(x) "by" tactic(tac) :=
+  assert (x ∈ READABLE) as ?h by tac; destruct h as [|[|[|[|]]]].
+
+Tactic Notation "destruct_readable" constr(x) :=
+  assert (x ∈ READABLE) as ?h; [ | destruct h as [|[|[|[|]]]] ].
+
+Tactic Notation "destruct_writable" constr(x) "by" tactic(tac) :=
+  assert (x ∈ WRITABLE) as ?h by tac; destruct h as [|[|]].
+
+Tactic Notation "destruct_writable" constr(x) :=
+  assert (x ∈ WRITABLE) as ?h; [ | destruct h as [|[|]] ].
