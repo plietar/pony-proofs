@@ -13,6 +13,19 @@ Ltac unfold_classes := repeat unfold
   READABLE, WRITABLE, STABLE, ISO, TRN, REF, VAL, BOX, TAG in *.
 Ltac finish := solve [subst; unfold_classes; tauto].
 
+Tactic Notation "destruct_ecap" constr(e) :=
+  destruct e as [[]| |].
+Tactic Notation "destruct_ecap" constr(e1) "," constr(e2) :=
+  destruct_ecap e1 ; destruct_ecap e2.
+Tactic Notation "destruct_ecap" constr(e1) "," constr(e2) "," constr(e3) :=
+  destruct_ecap e1 ; destruct_ecap e2 ; destruct_ecap e3.
+
+Tactic Notation "destruct'" constr(H) := destruct H.
+Tactic Notation "destruct'" constr(H) "by" tactic(tac) :=
+  assert H as ?h by tac; destruct h.
+Tactic Notation "destruct'" constr(H) "as" simple_intropattern(pat) "by" tactic(tac) :=
+  assert H as ?h by tac; destruct h as pat.
+
 Lemma lemma1 {A} : forall (x y: A), In x [y] -> x = y.
 Proof. intros. destruct H; [auto | destruct H]. Qed.
 Hint Resolve lemma1.
@@ -62,7 +75,7 @@ Lemma lemma6: forall λ λ',
   subcap λ λ' -> subcap λ' λ -> λ = λ'.
 Proof with auto.
 intros.
-destruct λ as [[]| |], λ' as [[]| |];
+destruct_ecap λ, λ';
 inversion H; inversion H0; auto.
 Qed.
 
@@ -132,7 +145,7 @@ Proof with auto.
 intros.
 destruct (adapt read λ κ) as [λr|] eqn:?.
 - exists λr...
-- destruct λ as [[]| |], κ; inversion Heqo; inversion H.
+- destruct_ecap λ; destruct κ; inversion Heqo; inversion H.
 Qed.
 
 Lemma lemma15 : forall λs κ κ' λ,
@@ -162,7 +175,7 @@ Lemma lemma16 : forall λs κ κ' λ,
 Proof.
 intros.
 assert (subcap (unalias κ) λ) by (apply H; auto).
-destruct λ as [[]| |], κ, κ'; simpl in *;
+destruct_ecap λ; destruct κ, κ'; simpl in *;
 inversion H1; inversion H2; auto.
 Qed.
 
@@ -469,7 +482,7 @@ Lemma lemma45 : forall (λ1 λ2: ecap),
 Proof.
 intros.
 inversion H; auto.
-- destruct λ2 as [[]| |]; auto.
+- destruct_ecap λ2; auto.
 Qed.
 
 Lemma lemma46 : forall (λ1 λ1' λ2 λ2': ecap),
@@ -819,10 +832,9 @@ intros.
 assert (λs ∘ κs4 ∈ TAG ∪ BOT)
   by (eapply (lemma64 iso) with ([unalias κ] ∘ κs3); eauto).
 
-assert ([C ref] ∘ κs4 ∈ TAG ∪ BOT)
+destruct' ([C ref] ∘ κs4 ∈ TAG ∪ BOT) as [|]
   by (apply lemma72 with λs; auto).
 
-destruct H3 as [|].
 - apply lemma55; auto.
 - apply lemma52; auto.
 Qed.
@@ -840,16 +852,19 @@ intros.
 assert (λs ∘ κs4 ∈ BOX ∪ TAG ∪ BOT)
   by (eapply (lemma64 trn); [ apply lemma27 | ..]; eauto).
 
-assert ([C ref] ∘ κs4 ∈ BOX ∪ TAG ∪ BOT)
+destruct' ([C ref] ∘ κs4 ∈ BOX ∪ TAG ∪ BOT) as [|[|]]
   by (apply lemma71 with λs; auto).
 
-destruct H5 as [|[|]].
+(* TAG and BOT are compatible with anything else *)
 2-3: solve [ apply lemma55; auto | apply lemma52; auto ].
 
 destruct_stable ([C ref] ∘ κs1 ∘ κ2 ∘ κs3) by eauto.
+(* All cases except ISO are compatible with BOX.  *)
 2-7: solve [eapply lemma48; eauto | apply lemma73, lemma52; auto ].
 
-(* [C ref] ∘ κs1 ∘ κ2 ∘ κs3 ∈ ISO *)
+(* ref ∘ κs4 ∈ BOX *)
+(* ref ∘ κs1 ∘ κ2 ∘ κs3 ∈ ISO *)
+(* -κ ∘ κs3 ∈ TRN *)
 
 Admitted.
 
