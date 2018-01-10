@@ -14,17 +14,17 @@ Ltac unfold_classes := repeat unfold
 Ltac finish := solve [subst; unfold_classes; tauto].
 
 Tactic Notation "destruct_ecap" constr(e) :=
-  destruct e as [[]| |].
+  (destruct e as [[]| |]).
 Tactic Notation "destruct_ecap" constr(e1) "," constr(e2) :=
-  destruct_ecap e1 ; destruct_ecap e2.
+  (destruct_ecap e1 ; destruct_ecap e2).
 Tactic Notation "destruct_ecap" constr(e1) "," constr(e2) "," constr(e3) :=
-  destruct_ecap e1 ; destruct_ecap e2 ; destruct_ecap e3.
+  (destruct_ecap e1 ; destruct_ecap e2 ; destruct_ecap e3).
 
 Tactic Notation "destruct'" constr(H) := destruct H.
 Tactic Notation "destruct'" constr(H) "by" tactic(tac) :=
-  assert H as ?h by tac; destruct h.
+  (let h := fresh "H" in assert H as h by tac; destruct h).
 Tactic Notation "destruct'" constr(H) "as" simple_intropattern(pat) "by" tactic(tac) :=
-  assert H as ?h by tac; destruct h as pat.
+  (let h := fresh "H" in assert H as h by tac; destruct h as pat).
 
 Lemma lemma1 {A} : forall (x y: A), In x [y] -> x = y.
 Proof. intros. destruct H; [auto | destruct H]. Qed.
@@ -323,6 +323,7 @@ split.
 unfold_classes; auto.
 inversion 1; [subst; auto | inversion H0].
 Qed.
+Hint Resolve lemma30.
 
 Lemma lemma31 : forall κ, [unalias κ] ∈ STABLE.
 Proof.
@@ -330,11 +331,13 @@ intros.
 assert ([unalias κ] ∈ G κ) by apply lemma30.
 destruct κ; finish.
 Qed.
+Hint Resolve lemma31.
 
 Lemma lemma32 : [C ref] ∈ STABLE.
 Proof.
 replace (C ref) with (unalias ref) by auto. apply lemma31.
 Qed.
+Hint Resolve lemma32.
 
 Lemma lemma34 : forall (λs: capset) (κs: list cap),
   (λs ∈ (ISO ∪ TRN ∪ VAL)) ->
@@ -645,76 +648,86 @@ apply lemma58; auto.
 apply lemma57; auto.
 Qed.
 
-Definition group_adapt (κ κ': cap): option cap :=
-  match κ, κ' with
-  | iso, iso => Some iso
-  | iso, trn => Some iso
-  | iso, ref => Some iso
-  | iso, val => Some val
-  | iso, box => Some val
-  | iso, tag => Some tag
+Inductive group_adapt : cap -> cap -> cap -> Prop :=
+| group_adapt_iso_iso : group_adapt iso iso iso
+| group_adapt_iso_trn : group_adapt iso trn iso
+| group_adapt_iso_ref : group_adapt iso ref iso
+| group_adapt_iso_val : group_adapt iso val val
+| group_adapt_iso_box : group_adapt iso box val
+| group_adapt_iso_tag : group_adapt iso tag tag
 
-  | trn, iso => Some iso
-  | trn, trn => Some trn
-  | trn, ref => Some trn
-  | trn, val => Some val
-  | trn, box => Some val
-  | trn, tag => Some tag
+| group_adapt_trn_iso : group_adapt trn iso iso
+| group_adapt_trn_trn : group_adapt trn trn trn
+| group_adapt_trn_ref : group_adapt trn ref trn
+| group_adapt_trn_val : group_adapt trn val val
+| group_adapt_trn_box : group_adapt trn box val
+| group_adapt_trn_tag : group_adapt trn tag tag
 
-  | ref, iso => Some iso
-  | ref, trn => Some trn
-  | ref, ref => Some ref
-  | ref, val => Some val
-  | ref, box => Some box
-  | ref, tag => Some tag
+| group_adapt_ref_iso : group_adapt ref iso iso
+| group_adapt_ref_trn : group_adapt ref trn trn
+| group_adapt_ref_ref : group_adapt ref ref ref
+| group_adapt_ref_val : group_adapt ref val val
+| group_adapt_ref_box : group_adapt ref box box
+| group_adapt_ref_tag : group_adapt ref tag tag
 
-  | val, iso => Some val
-  | val, trn => Some val
-  | val, ref => Some val
-  | val, val => Some val
-  | val, box => Some val
-  | val, tag => Some tag
+| group_adapt_val_iso : group_adapt val iso val
+| group_adapt_val_trn : group_adapt val trn val
+| group_adapt_val_ref : group_adapt val ref val
+| group_adapt_val_val : group_adapt val val val
+| group_adapt_val_box : group_adapt val box val
+| group_adapt_val_tag : group_adapt val tag tag
 
-  | box, iso => Some tag
-  | box, trn => Some box
-  | box, ref => Some box
-  | box, val => Some val
-  | box, box => Some box
-  | box, tag => Some tag
+| group_adapt_box_iso : group_adapt box iso tag
+| group_adapt_box_trn : group_adapt box trn box
+| group_adapt_box_ref : group_adapt box ref box
+| group_adapt_box_val : group_adapt box val val
+| group_adapt_box_box : group_adapt box box box
+| group_adapt_box_tag : group_adapt box tag tag
+.
+Hint Constructors group_adapt.
 
-  | tag, _ => None
-  end.
-
-Lemma lemma62 : forall (λs: capset) (κ κ': cap),
+Lemma lemma62 : forall (λs: capset) (κ κ' κ'': cap),
   λs ∈ G κ ->
-  match group_adapt κ κ' with
-  | Some κ'' => λs ∘ κ' ∈ G κ''
-  | None => λs ∘ κ' ∈ BOT
-  end.
+  λs ∘ κ' ∈ G κ'' <-> group_adapt κ κ' κ''.
 Proof.
 intros.
+split.
+- intro.
+  destruct κ eqn:?, κ' eqn:?;
+  (destruct (adapt extract (unalias κ) κ') as [λ|] eqn:Hextract;
+  [| destruct (adapt read (unalias κ) κ') as [λ|] eqn:Hread];
+  [
+    replace κ'' with (alias λ)
+      by (apply lemma9 with (λs ∘ κ'); [apply lemma15 with κ|]; subst; auto);
+    (subst; inversion Hextract; auto)
+  |
+    replace κ'' with (alias λ)
+      by (apply lemma9 with (λs ∘ κ'); [apply lemma17 with κ|]; subst; auto);
+    (subst; inversion Hread; auto)
+  |
+    exfalso; subst;
+      eapply lemma36; eauto;
+      eapply lemma61; eauto
+  ]).
+  inversion Hextract.
+  inversion Hextract.
 
-assert (forall κ, G κ = G (alias (unalias κ))) as Hrewrite
-  by (destruct 0; auto).
-
-destruct κ, κ';
-unfold group_adapt;
-try (rewrite Hrewrite; unfold unalias);
-
-solve [ eapply lemma15; eauto
-      | eapply lemma17; eauto
-      | eapply lemma61; eauto].
+- intro.
+  assert (forall κ, G κ = G (alias (unalias κ))) as Hrewrite
+    by (destruct 0; auto).
+  rewrite Hrewrite.
+  inversion H0; subst;
+  solve [ eapply lemma15; eauto | eapply lemma17; eauto].
 Qed.
+
+Ltac destruct_group_adapt κ κ' κ'' :=
+  let H := fresh "H" in
+  eassert (group_adapt κ κ' κ'') as H; [apply -> lemma62 | inversion H].
 
 Lemma lemma63 : forall (κ: cap),
   [C ref] ∘ κ ∈ ISO -> κ = iso.
 Proof.
-intros.
-pose (Hlemma62:=lemma62 [C ref] ref κ).
-
-destruct κ; simpl in Hlemma62;
-try solve [(eapply lemma9; [ eapply Hlemma62; apply lemma20 | apply H ])].
-Qed.
+intros. destruct_group_adapt ref κ iso; eauto. Qed.
 
 Lemma lemma64 (κ: cap) : forall (λs λs': capset),
   λs ∈ STABLE ->
@@ -821,6 +834,176 @@ unfold compatible_set.
 intros; apply lemma45; auto.
 Qed.
 
+Lemma lemma74 : forall (λs1 λs2: capset) (κ: cap),
+  λs1 ∈ STABLE -> λs2 ∈ STABLE ->
+  λs1 ∘ κ ∈ ISO ->
+  λs2 ∘ κ ∈ TRN ∪ REF ->
+  λs1 ∈ ISO /\ λs2 ∈ TRN ∪ REF.
+Proof.
+intros.
+destruct' (exists κ1 : cap, λs1 ∈ G κ1) as [κ1]
+  by (destruct lemma50 with λs1 as [|[]]; [| exfalso ; apply lemma36 with (λs1 ∘ κ) iso; [|apply lemma23]; eauto |]; eauto).
+
+destruct H2 as [H2|H2];
+
+ (destruct' (exists κ2 : cap, λs2 ∈ G κ2) as [κ2]
+    by (destruct lemma50 with λs2 as [|[]]; [| exfalso ; eapply lemma36 with (λs2 ∘ κ) _; [|apply lemma23]; eauto |]; eauto));
+
+  eassert (group_adapt κ1 κ iso) as Hadapt1 by (apply -> lemma62; eauto);
+  eassert (group_adapt κ2 κ _) as Hadapt2 by (apply -> lemma62; eauto);
+
+  inversion Hadapt1; subst;
+  inversion Hadapt2; subst;
+
+  finish.
+Qed.
+
+Lemma lemma75 : forall (λs1 λs2: capset) (κs: list cap),
+  λs1 ∈ STABLE -> λs2 ∈ STABLE ->
+  λs1 ∘ κs ∈ ISO ->
+  λs2 ∘ κs ∈ TRN ∪ REF ->
+  λs1 ∈ ISO /\ λs2 ∈ TRN ∪ REF.
+Proof.
+intros.
+induction κs as [|κ] using rev_ind; auto.
+- rewrite lemma19 in *.
+  destruct lemma74 with (λs1 ∘ κs) (λs2 ∘ κs) κ; eauto.
+Qed.
+
+Lemma lemma76 : forall (λs: capset) (κ: cap),
+  λs ∈ STABLE ->
+  λs ∘ κ ∈ ISO ->
+  λs ∈ ISO \/ κ = iso.
+Proof.
+intros.
+assert (exists κ, λs ∈ G κ) as [κ0]
+  by (apply lemma40; apply lemma37 with κ iso; eauto).
+destruct_group_adapt κ0 κ iso; subst; eauto.
+Qed.
+
+Lemma lemma77 : forall (κ κ': cap),
+  [unalias κ] ∈ G κ' -> κ = κ'.
+Proof.
+intros.
+symmetry.
+apply lemma8.
+apply lemma1.
+apply H.
+Qed.
+
+Lemma lemma78 : forall (λs: capset) (κ0 κ1 κ2: cap),
+  λs ∈ G κ0 ->
+  λs ∘ κ1 ∈ G κ2 ->
+  adapt extract (unalias κ0) κ1 = Some (unalias κ2) \/
+  adapt extract (unalias κ0) κ1 = None /\ adapt read (unalias κ0) κ1 = Some (unalias κ2).
+intros.
+destruct_group_adapt κ0 κ1 κ2; eauto.
+Qed.
+
+Lemma lemma79: forall o λ0 λ0' κ λ1',
+  subcap λ0 λ0' ->
+  adapt o λ0' κ = Some λ1' ->
+  exists λ1, adapt o λ0 κ = Some λ1 /\ subcap λ1 λ1'.
+Proof.
+intros.
+inversion H.
+1: subst. exists λ1'. auto.
+all: destruct o, κ ; subst; inversion H0;
+  (eexists _; unfold adapt; eauto).
+Qed.
+
+Lemma lemma81 : forall (κ: cap), alias (unalias κ) = κ.
+Proof. destruct 0; auto. Qed.
+
+Lemma lemma82 : forall (κ κ': cap) λ,
+  adapt extract (unalias κ) κ' = Some λ ->
+  exists κ'', λ = unalias κ''.
+intros.
+destruct κ, κ'; inversion H;
+exists (alias λ); subst; auto.
+Qed.
+
+Lemma lemma83 : forall (κ κ': cap) λ,
+  adapt extract (unalias κ) κ' = None ->
+  adapt read (unalias κ) κ' = Some λ ->
+  exists κ'', λ = unalias κ''.
+intros.
+destruct κ, κ'; inversion H0;
+exists (alias λ); subst; auto.
+
+all: inversion H.
+Qed.
+
+Lemma lemma84 : forall (λs λs': capset) (κ0 κ0' κ1' κ: cap),
+  λs ∈ G κ0 ->
+  λs' ∈ G κ0' ->
+  λs' ∘ κ ∈ G κ1' ->
+  subcap (unalias κ0) (unalias κ0') ->
+  exists κ1, λs ∘ κ ∈ G κ1 /\ subcap (unalias κ1) (unalias κ1').
+Proof.
+intros.
+destruct lemma78 with λs' κ0' κ κ1' as [|[]]; auto;
+[| destruct (adapt extract (unalias κ0) κ) eqn:? ].
+
+- edestruct lemma79 as [? []]; eauto.
+  edestruct lemma82 with κ0 κ x; auto.
+  exists (alias x).
+  split.
+  + eapply lemma15; [ apply H | auto..].
+  + subst x. rewrite lemma81. auto.
+
+- edestruct lemma79 as [? []]; eauto.
+  edestruct lemma82 with κ0 κ e; auto.
+  exists (alias e).
+  split.
+  + eapply lemma15; [ apply H | auto..].
+  + subst e; try rewrite lemma81.
+    eapply lemma7; [ eapply lemma13 |]; eauto.
+- edestruct lemma79 as [? []]; eauto.
+  destruct lemma83 with κ0 κ x; auto.
+  exists (alias x).
+  split.
+  + eapply lemma17; [ apply H | auto..].
+  + subst x. rewrite lemma81. auto.
+Qed.
+
+Lemma lemma85 : forall (λs λs': capset) (κ0 κ0' κ1': cap) (κs: list cap),
+  λs ∈ G κ0 ->
+  λs' ∈ G κ0' ->
+  λs' ∘ κs ∈ G κ1' ->
+  subcap (unalias κ0) (unalias κ0') ->
+  exists κ1, λs ∘ κs ∈ G κ1 /\ subcap (unalias κ1) (unalias κ1').
+Proof.
+intros.
+generalize dependent κ0.
+generalize dependent κ0'.
+generalize dependent κ1'.
+induction κs as [|κ] using rev_ind; auto.
+- intros.
+  exists κ0.
+  replace κ1' with κ0' by (eapply lemma9; eauto).
+  auto.
+- intros.
+  rewrite lemma19 in *.
+
+  destruct lemma40 with (λs' ∘ κs); [eapply lemma37|]; eauto.
+  edestruct IHκs as [? []]; eauto.
+  eapply lemma84 with (λs:=λs ∘ κs) (λs':=λs' ∘ κs); eauto.
+
+Qed.
+
+Lemma lemma86 : forall (λs: capset) (κs: list cap),
+  λs ∈ WRITABLE ->
+  [C ref] ∘ κs ∈ ISO ->
+  λs ∘ κs ∈ ISO.
+Proof.
+intros.
+(destruct_writable λs by auto); (
+  edestruct lemma85 with (λs:=λs) (λs':=[C ref]) (κ0':=ref) (κs:=κs) as [κ1 [? Hsubcap]]; eauto;
+  destruct κ1; inversion Hsubcap; auto
+).
+Qed.
+
 Lemma lemmaB1 : forall (λs: capset) (κs1 κs3 κs4: list cap) (κ κ2: cap),
   λs ∈ WRITABLE ->
   compatible_set (λs ∘ κs4) ([unalias κ] ∘ κs3) ->
@@ -844,42 +1027,73 @@ Lemma lemmaB2 : forall (λs: capset) (λ: ecap) (κs1 κs3 κs4: list cap) (κ �
   subcap (unalias κ) (C κ2) ->
   safe_to_write λ κ ->
   compatible_set (λs ∘ κs4) ([unalias κ] ∘ κs3) ->
+  compatible_set (λs ∘ κs1) ([C (alias λ)]) ->
   [unalias κ] ∘ κs3 ∈ TRN ->
   compatible_set ([C ref] ∘ κs4) ([C ref] ∘ κs1 ∘ κ2 ∘ κs3).
 Proof.
 intros.
 
+(* -κ ∘ κs3 ∈ TRN *)
+
 assert (λs ∘ κs4 ∈ BOX ∪ TAG ∪ BOT)
   by (eapply (lemma64 trn); [ apply lemma27 | ..]; eauto).
 
-destruct' ([C ref] ∘ κs4 ∈ BOX ∪ TAG ∪ BOT) as [|[|]]
+assert ([C ref] ∘ κs4 ∈ BOX ∪ TAG ∪ BOT) as [|[|]]
   by (apply lemma71 with λs; auto).
 
-(* TAG and BOT are compatible with anything else *)
+(* TAG and BOT are compatible with anything else. *)
 2-3: solve [ apply lemma55; auto | apply lemma52; auto ].
 
-destruct_stable ([C ref] ∘ κs1 ∘ κ2 ∘ κs3) by eauto.
-(* All cases except ISO are compatible with BOX.  *)
-2-7: solve [eapply lemma48; eauto | apply lemma73, lemma52; auto ].
-
 (* ref ∘ κs4 ∈ BOX *)
-(* ref ∘ κs1 ∘ κ2 ∘ κs3 ∈ ISO *)
-(* -κ ∘ κs3 ∈ TRN *)
 
-Admitted.
+(* All cases except ISO are compatible with BOX.  *)
+destruct_stable ([C ref] ∘ κs1 ∘ κ2 ∘ κs3) by eauto.
+2-7: solve [ eapply lemma48; eauto | apply lemma73, lemma52; auto ].
+
+(* ref ∘ κs1 ∘ κ2 ∘ κs3 ∈ ISO *)
+
+assert ([C ref] ∘ κs1 ∘ κ2 ∈ ISO /\ [unalias κ] ∈ TRN ∪ REF) as []
+  by (apply lemma75 with κs3; eauto; finish).
+
+assert ([C ref] ∘ κs1 ∈ ISO \/ κ2 = iso) as [|]
+  by (apply lemma76; eauto).
+
+(* κ2 = iso is impossible as -κ < κ2 and -κ = trn or -κ = ref *)
+2: solve [
+  destruct H9;
+  [ assert (κ=trn) by (apply lemma77; auto)
+  | assert (κ=ref) by (apply lemma77; auto)];
+  subst; inversion H0
+].
+
+(* ref ∘ κs1 ∈ ISO *)
+assert (λs ∘ κs1 ∈ ISO) by (apply lemma86; auto).
+
+assert (compatible (unalias iso) (C (alias λ)))
+  by (apply H3; [apply H11|auto]).
+destruct λ as [[]| |] eqn:?; inversion H12.
+2: solve [ inversion H1 ].
+
+(* λ = C iso *)
+
+(* κ = iso \/ κ = val \/ κ = tag *)
+inversion H1;
+(destruct H9;
+  [ assert (κ=trn) by (apply lemma77; auto)
+  | assert (κ=ref) by (apply lemma77; auto)]);
+subst; inversion H13.
+Qed.
 
 Lemma lemmaB : forall (λs: capset) (λ: ecap) (κs1 κs3 κs4: list cap) (κ κ2: cap),
   λs ∈ WRITABLE ->
-  (* λ writable -> *)
   subcap (unalias κ) (C κ2) ->
   safe_to_write λ κ ->
   compatible_set (λs ∘ κs4) ([unalias κ] ∘ κs3) ->
+  compatible_set (λs ∘ κs1) ([C (alias λ)]) ->
   compatible_set ([C ref] ∘ κs4) ([C ref] ∘ κs1 ∘ κ2 ∘ κs3).
 Proof with finish.
 intros.
-destruct_stable ([unalias κ] ∘ κs3)
-  by (apply lemma27, lemma31).
-
+destruct_stable ([unalias κ] ∘ κs3) by auto.
 - (* [unalias κ] ∘ κs3 ∈ ISO *) apply lemmaB1 with λs κ...
 - (* [unalias κ] ∘ κs3 ∈ TRN *) apply lemmaB2 with λs λ κ...
 - (* [unalias κ] ∘ κs3 ∈ REF *) admit.
