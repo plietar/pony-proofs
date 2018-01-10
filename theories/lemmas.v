@@ -896,6 +896,7 @@ Lemma lemma78 : forall (λs: capset) (κ0 κ1 κ2: cap),
   λs ∘ κ1 ∈ G κ2 ->
   adapt extract (unalias κ0) κ1 = Some (unalias κ2) \/
   adapt extract (unalias κ0) κ1 = None /\ adapt read (unalias κ0) κ1 = Some (unalias κ2).
+Proof.
 intros.
 destruct_group_adapt κ0 κ1 κ2; eauto.
 Qed.
@@ -918,6 +919,7 @@ Proof. destruct 0; auto. Qed.
 Lemma lemma82 : forall (κ κ': cap) λ,
   adapt extract (unalias κ) κ' = Some λ ->
   exists κ'', λ = unalias κ''.
+Proof.
 intros.
 destruct κ, κ'; inversion H;
 exists (alias λ); subst; auto.
@@ -927,6 +929,7 @@ Lemma lemma83 : forall (κ κ': cap) λ,
   adapt extract (unalias κ) κ' = None ->
   adapt read (unalias κ) κ' = Some λ ->
   exists κ'', λ = unalias κ''.
+Proof.
 intros.
 destruct κ, κ'; inversion H0;
 exists (alias λ); subst; auto.
