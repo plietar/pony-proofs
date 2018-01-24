@@ -25,6 +25,7 @@ Definition TAG := G tag.
 Definition STABLE := ISO ∪ TRN ∪ REF ∪ VAL ∪ BOX ∪ TAG ∪ BOT.
 Definition READABLE := ISO ∪ TRN ∪ REF ∪ VAL ∪ BOX.
 Definition WRITABLE := ISO ∪ TRN ∪ REF.
+Definition NONWRITABLE := VAL ∪ BOX ∪ TAG ∪ BOT.
 
 Ltac destruct_READABLE H := destruct H as [|[|[|[|]]]].
 Ltac destruct_STABLE H := destruct H as [|[|[|[|[|[|]]]]]].

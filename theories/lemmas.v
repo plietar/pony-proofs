@@ -10,7 +10,7 @@ Ltac unfold_classes := repeat unfold
   alias, unalias,
   blob, blob_combine, blob_combine_one,
   elemOf, elemOf_union, elemOf_list, elemOf_bot,
-  READABLE, WRITABLE, STABLE, ISO, TRN, REF, VAL, BOX, TAG in *.
+  READABLE, NONWRITABLE, WRITABLE, STABLE, ISO, TRN, REF, VAL, BOX, TAG in *.
 Ltac finish := solve [subst; unfold_classes; tauto].
 
 Tactic Notation "destruct_ecap" constr(e) :=
@@ -1493,6 +1493,161 @@ apply lemma134; auto.
 
 Qed.
 
+Lemma lemma150 : forall (κ: cap) (κs: list cap),
+  [unalias κ] ∘ κs ∈ VAL ->
+  (κ = val \/ κ = box) \/ exists κ', (κ' ∈ κs /\ (κ' = val \/ κ' = box)).
+Proof.
+Admitted.
+
+Lemma lemma151 : forall (κ κ': cap),
+  κ = val \/ κ = box ->
+  subcap (C κ) (C κ') ->
+  κ' = val \/ κ' = box \/ κ' = tag.
+Proof.
+intros.
+inversion H; inversion H0; subst; auto.
+Qed.
+
+Lemma lemma152 : forall (λs: capset) (κ: cap),
+  λs ∈ NONWRITABLE ->
+  λs ∘ κ ∈ NONWRITABLE.
+Proof.
+intros.
+destruct H as [|[|[|]]];
+destruct κ;
+try solve [ left; eapply lemma62; eauto
+      | right; left; eapply lemma62; eauto
+      | right; right; left; eapply lemma62; eauto
+      | right; right; right; eapply lemma22; eauto
+      | right; right; right; eapply lemma23; eauto ].
+Qed.
+
+Lemma lemma153 : forall (λs: capset) (κs: list cap),
+  λs ∈ NONWRITABLE ->
+  λs ∘ κs ∈ NONWRITABLE.
+Proof.
+intros.
+induction κs as [|κ0] using rev_ind; auto.
+rewrite lemma19. apply lemma152. auto.
+Qed.
+
+Lemma lemma154 : forall (λs: capset) (κ: cap),
+  λs ∈ STABLE ->
+  κ = val \/ κ = box \/ κ = tag ->
+  λs ∘ κ ∈ NONWRITABLE.
+Proof.
+Admitted.
+
+Lemma lemma155 : forall (λs: capset) (κ: cap) (κs: list cap),
+  λs ∈ STABLE ->
+  κ = val \/ κ = box \/ κ = tag ->
+  λs ∘ κ ∘ κs ∈ NONWRITABLE.
+Proof.
+intros; apply lemma153; apply lemma154; auto.
+Qed.
+
+Lemma lemma156: forall (λs: capset) (κ: cap),
+  λs ∈ STABLE ->
+  λs ∘ κ ∈ BOT ->
+  λs ∈ TAG ∪ BOT.
+Proof.
+intros.
+destruct_stable λs by auto.
+6-7: finish.
+
+all:
+exfalso;
+destruct κ;
+(eapply lemma36; [| apply H0]);
+eapply lemma62; eauto.
+Qed.
+
+Lemma lemma160 : forall (λs: capset) (κ: cap),
+  λs ∈ STABLE ->
+  λs ∘ κ ∈ NONWRITABLE ->
+  λs ∈ NONWRITABLE \/ (κ = val \/ κ = box \/ κ = tag).
+Proof.
+intros.
+destruct_stable λs by auto.
+4-7: finish.
+
+- destruct H0 as [|[|[|]]].
+  + destruct_group_adapt iso κ val; eauto.
+  + destruct_group_adapt iso κ box; eauto.
+  + destruct_group_adapt iso κ tag; eauto.
+  + assert (λs ∈ TAG ∪ BOT) by (apply lemma156 with κ; auto); finish.
+
+- destruct H0 as [|[|[|]]].
+  + destruct_group_adapt trn κ val; eauto.
+  + destruct_group_adapt trn κ box; eauto.
+  + destruct_group_adapt trn κ tag; eauto.
+  + assert (λs ∈ TAG ∪ BOT) by (apply lemma156 with κ; auto); finish.
+
+- destruct H0 as [|[|[|]]].
+  + destruct_group_adapt ref κ val; eauto.
+  + destruct_group_adapt ref κ box; eauto.
+  + destruct_group_adapt ref κ tag; eauto.
+  + assert (λs ∈ TAG ∪ BOT) by (apply lemma156 with κ; auto); finish.
+Qed.
+
+Lemma lemma161 : forall (λs: capset),
+  λs ∈ WRITABLE ->
+  λs ∈ NONWRITABLE ->
+  False.
+intros.
+destruct H0 as [|[|[|]]];
+destruct_writable λs; auto;
+solve [ eapply lemma105; [apply H0 | apply H1 | auto]
+      | eapply lemma36; eauto ].
+Qed.
+
+Lemma lemma162 : forall (λs: capset) (κs: list cap),
+  λs ∈ WRITABLE ->
+  λs ∘ κs ∈ NONWRITABLE ->
+  [C ref] ∘ κs ∈ NONWRITABLE.
+Proof.
+intros.
+induction κs as [|κ] using rev_ind; auto.
+- exfalso; apply lemma161 with λs; eauto.
+- rewrite lemma19 in *.
+  destruct lemma160 with (λs ∘ κs) κ; eauto.
+  + apply lemma152; auto.
+  + apply lemma154; auto.
+Qed.
+
+Lemma lemma163 : forall (λs1 λs2: capset),
+  λs1 ∈ NONWRITABLE ->
+  λs2 ∈ NONWRITABLE ->
+  compatible_set λs1 λs2.
+Proof.
+intros λs1 λs2 [|[|[|]]] [|[|[|]]];
+
+solve [ eapply lemma48; eauto
+      | apply lemma52; auto
+      | apply lemma73, lemma52; auto].
+Qed.
+
+Lemma lemma164 : forall λs (κs: list cap) (κ: cap),
+  λs ∘ (κ::κs) = λs ∘ κ ∘ κs.
+Proof. auto. Qed.
+
+Lemma lemma165 : forall (λs: capset) (κs: list cap) (κ: cap),
+  λs ∈ STABLE ->
+  κ ∈ κs ->
+  κ = val \/ κ = box ->
+  λs ∘ κs ∈ NONWRITABLE.
+Proof.
+intros.
+generalize dependent λs.
+induction κs; intros.
+- destruct H0.
+- rewrite lemma164.
+  destruct H0.
+  + subst.
+    apply lemma155; tauto.
+  + apply IHκs; auto.
+Qed.
+
 Lemma lemmaB4 : forall (λs: capset) (λ: ecap) (κs1 κs3 κs4: list cap) (κ κ2: cap),
   λs ∈ WRITABLE ->
   subcap (unalias κ) (C κ2) ->
@@ -1504,10 +1659,25 @@ Lemma lemmaB4 : forall (λs: capset) (λ: ecap) (κs1 κs3 κs4: list cap) (κ �
 Proof.
 intros.
 
-assert (λs ∘ κs4 ∈ VAL ∪ BOX ∪ TAG ∪ BOT)
+assert (λs ∘ κs4 ∈ NONWRITABLE)
   by (apply (lemma64 val) with ([unalias κ] ∘ κs3); auto).
+assert ([C ref] ∘ κs4 ∈ NONWRITABLE)
+  by (apply lemma162 with λs; auto).
 
-Admitted.
+destruct lemma150 with κ κs3 as [|[κ' [? ?]]]; auto.
+
+- (* κ = val \/ κ = box *)
+  assert (κ2 = val \/ κ2 = box \/ κ2 = tag)
+    by (apply lemma151 with κ; [| destruct H7; subst]; auto).
+  assert ([C ref] ∘ κs1 ∘ κ2 ∘ κs3 ∈ NONWRITABLE)
+    by (apply lemma155; auto).
+  apply lemma163; auto.
+
+- (* κ' ∈ κs3 /\ (κ' = val \/ κ' = box) *)
+  assert ([C ref] ∘ κs1 ∘ κ2 ∘ κs3 ∈ NONWRITABLE)
+    by (apply lemma165 with κ'; auto; auto).
+  apply lemma163; auto.
+Qed.
 
 Lemma lemmaB : forall (λs: capset) (λ: ecap) (κs1 κs3 κs4: list cap) (κ κ2: cap),
   λs ∈ WRITABLE ->
