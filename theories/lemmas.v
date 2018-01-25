@@ -12,6 +12,9 @@ Ltac unfold_classes := repeat unfold
   elemOf, elemOf_union, elemOf_list, elemOf_bot,
   READABLE, NONWRITABLE, WRITABLE, STABLE, ISO, TRN, REF, VAL, BOX, TAG in *.
 Ltac finish := solve [subst; unfold_classes; tauto].
+Hint Extern 4 (~(_ = _)) => discriminate.
+Hint Extern 4 ((_ = _)) => symmetry.
+Hint Extern 4 => unfold_classes.
 
 Tactic Notation "destruct_ecap" constr(e) :=
   (destruct e as [[]| |]).
@@ -376,7 +379,6 @@ edestruct lemma34 as [|[|]]; eauto.
   eassert (_=tag) as H2 by (eapply lemma9; [eapply H1 | eapply H0]);
   inversion H2.
 - finish.
-- finish.
 Qed.
 
 Lemma lemma36 : forall (λs: capset) (κ: cap),
@@ -723,6 +725,11 @@ split.
   solve [ eapply lemma15; eauto | eapply lemma17; eauto].
 Qed.
 
+Lemma lemma62a : forall (λs: capset) (κ κ' κ'': cap),
+  λs ∈ G κ ->
+  λs ∘ κ' ∈ G κ'' -> group_adapt κ κ' κ''.
+Proof. eapply lemma62. Qed.
+
 Ltac destruct_group_adapt κ κ' κ'' :=
   let H := fresh "H" in
   eassert (group_adapt κ κ' κ'') as H; [apply -> lemma62 | inversion H].
@@ -1031,7 +1038,6 @@ Hint Resolve lemma89.
 
 Lemma lemma88 {A} : forall (xs: list A) (x y: A),
   In x xs -> In x (xs ++ [y]).
-Proof.
 Proof. intros; apply in_or_app; auto. Qed.
 Hint Resolve lemma88.
 
@@ -1085,8 +1091,6 @@ split.
   destruct (@lemma89 cap) with κs κ ref; auto.
   apply IHκs; auto.
 Qed.
-
-Hint Extern 4 (~(_ = _)) => discriminate.
 
 Lemma lemma99: forall λs κ κ',
   λs ∈ G κ ->
@@ -1188,7 +1192,6 @@ Lemma lemma107: forall λs (κ: cap),
 Proof.
 intros.
 destruct lemma50 with λs as [|[κ' ?]]; auto.
-- finish.
 - pose (lemma99 λs κ' κ) as H2.
   destruct κ eqn:?, κ' eqn:?;
   solve [ exfalso; eapply lemma36; [ apply H2; auto | auto ]
@@ -1213,11 +1216,10 @@ Lemma lemma114 : forall λs,
 Proof.
 intros.
 destruct lemma50 with λs as [|[κ' ?]]; auto.
-- finish.
-- destruct κ';
-  solve [ eassert (compatible _ (C _)) as Hcompat by (apply H0; [apply H1 | auto]);
-            inversion Hcompat
-        | finish ].
+destruct κ';
+solve [ eassert (compatible _ (C _)) as Hcompat by (apply H0; [apply H1 | auto]);
+          inversion Hcompat
+      | finish ].
 Qed.
 
 Lemma lemma115 : forall λs,
@@ -1227,11 +1229,10 @@ Lemma lemma115 : forall λs,
 Proof.
 intros.
 destruct lemma50 with λs as [|[κ' ?]]; auto.
-- finish.
-- destruct κ';
-  solve [ eassert (compatible _ (C _)) as Hcompat by (apply H0; [apply H1 | auto]);
-            inversion Hcompat
-        | finish ].
+destruct κ';
+solve [ eassert (compatible _ (C _)) as Hcompat by (apply H0; [apply H1 | auto]);
+          inversion Hcompat
+      | finish ].
 Qed.
 
 Lemma lemma117: forall (λs: capset) (κ: cap),
@@ -1369,12 +1370,485 @@ Lemma lemma135 : forall (λs: capset) (λ: ecap),
   safe_to_write λ ref ->
   compatible_set λs ([C (alias λ)]) ->
   λs ∈ REF ∪ BOX ∪ TAG ∪ BOT.
+Proof.
 intros.
 inversion H0; subst; unfold alias in H1.
 - right; right; apply lemma114; auto.
 - right; apply lemma115; auto.
 - apply (lemma64 ref) with [C ref]; auto.
 Qed.
+
+Lemma lemma150 : forall (κ: cap) (κs: list cap),
+  [unalias κ] ∘ κs ∈ VAL ->
+  (κ = val \/ κ = box) \/ (val ∈ κs \/ box ∈ κs).
+Proof.
+intros.
+induction κs as [|κ'] using rev_ind; auto.
+- left. left. apply lemma77. auto.
+- rewrite lemma19 in *.
+  destruct_stable ([unalias κ] ∘ κs) by auto.
+  + destruct_group_adapt iso κ' val;
+    [ apply H | apply H0 | auto..].
+  + destruct_group_adapt trn κ' val;
+    [ apply H | apply H0 | auto..].
+  + destruct_group_adapt ref κ' val;
+    [ apply H | apply H0 | auto..].
+  + destruct IHκs; auto.
+    destruct H1; auto.
+  + destruct_group_adapt box κ' val;
+    [ apply H | apply H0 | auto..].
+  + destruct_group_adapt tag κ' val;
+    [ apply H | apply H0 | auto..].
+  + exfalso.
+    apply lemma36 with (([unalias κ] ∘ κs) ∘ κ') val; auto.
+    apply lemma23; auto.
+Qed.
+
+Lemma lemma151 : forall (κ κ': cap),
+  κ = val \/ κ = box ->
+  subcap (C κ) (C κ') ->
+  κ' = val \/ κ' = box \/ κ' = tag.
+Proof.
+intros.
+inversion H; inversion H0; subst; auto.
+Qed.
+
+Lemma lemma152 : forall (λs: capset) (κ: cap),
+  λs ∈ NONWRITABLE ->
+  λs ∘ κ ∈ NONWRITABLE.
+Proof.
+intros.
+destruct H as [|[|[|]]];
+destruct κ;
+solve [ left; eapply lemma62; eauto
+      | right; left; eapply lemma62; eauto
+      | right; right; left; eapply lemma62; eauto
+      | right; right; right; eapply lemma22; eauto
+      | right; right; right; eapply lemma23; eauto ].
+Qed.
+
+Lemma lemma153 : forall (λs: capset) (κs: list cap),
+  λs ∈ NONWRITABLE ->
+  λs ∘ κs ∈ NONWRITABLE.
+Proof.
+intros.
+induction κs as [|κ0] using rev_ind; auto.
+rewrite lemma19. apply lemma152. auto.
+Qed.
+
+Lemma lemma154 : forall (λs: capset) (κ: cap),
+  λs ∈ STABLE ->
+  κ = val \/ κ = box \/ κ = tag ->
+  λs ∘ κ ∈ NONWRITABLE.
+Proof.
+intros.
+(destruct_stable λs by auto);
+destruct H0 as [|[|]]; subst;
+solve [ left; eapply lemma62; eauto
+      | right; left; eapply lemma62; eauto
+      | right; right; left; eapply lemma62; eauto
+      | right; right; right; eapply lemma22; eauto
+      | right; right; right; eapply lemma23; eauto ].
+Qed.
+
+Lemma lemma155 : forall (λs: capset) (κ: cap) (κs: list cap),
+  λs ∈ STABLE ->
+  κ = val \/ κ = box \/ κ = tag ->
+  λs ∘ κ ∘ κs ∈ NONWRITABLE.
+Proof.
+intros; apply lemma153; apply lemma154; auto.
+Qed.
+
+Lemma lemma156: forall (λs: capset) (κ: cap),
+  λs ∈ STABLE ->
+  λs ∘ κ ∈ BOT ->
+  λs ∈ TAG ∪ BOT.
+Proof.
+intros.
+destruct_stable λs by auto.
+6-7: finish.
+
+all:
+exfalso;
+destruct κ;
+(eapply lemma36; [| apply H0]);
+eapply lemma62; eauto.
+Qed.
+
+Lemma lemma160 : forall (λs: capset) (κ: cap),
+  λs ∈ STABLE ->
+  λs ∘ κ ∈ NONWRITABLE ->
+  λs ∈ NONWRITABLE \/ (κ = val \/ κ = box \/ κ = tag).
+Proof.
+intros.
+destruct_stable λs by auto.
+4-7: finish.
+
+- destruct H0 as [|[|[|]]].
+  + destruct_group_adapt iso κ val; eauto.
+  + destruct_group_adapt iso κ box; eauto.
+  + destruct_group_adapt iso κ tag; eauto.
+  + assert (λs ∈ TAG ∪ BOT) by (apply lemma156 with κ; auto); finish.
+
+- destruct H0 as [|[|[|]]].
+  + destruct_group_adapt trn κ val; eauto.
+  + destruct_group_adapt trn κ box; eauto.
+  + destruct_group_adapt trn κ tag; eauto.
+  + assert (λs ∈ TAG ∪ BOT) by (apply lemma156 with κ; auto); finish.
+
+- destruct H0 as [|[|[|]]].
+  + destruct_group_adapt ref κ val; eauto.
+  + destruct_group_adapt ref κ box; eauto.
+  + destruct_group_adapt ref κ tag; eauto.
+  + assert (λs ∈ TAG ∪ BOT) by (apply lemma156 with κ; auto); finish.
+Qed.
+
+Lemma lemma161 : forall (λs: capset),
+  λs ∈ WRITABLE ->
+  λs ∈ NONWRITABLE ->
+  False.
+Proof.
+intros.
+destruct H0 as [|[|[|]]];
+destruct_writable λs; auto;
+solve [ eapply lemma105; [apply H0 | apply H1 | auto]
+      | eapply lemma36; eauto ].
+Qed.
+
+Lemma lemma162 : forall (λs: capset) (κs: list cap),
+  λs ∈ WRITABLE ->
+  λs ∘ κs ∈ NONWRITABLE ->
+  [C ref] ∘ κs ∈ NONWRITABLE.
+Proof.
+intros.
+induction κs as [|κ] using rev_ind; auto.
+- exfalso; apply lemma161 with λs; eauto.
+- rewrite lemma19 in *.
+  destruct lemma160 with (λs ∘ κs) κ; eauto.
+  + apply lemma152; auto.
+  + apply lemma154; auto.
+Qed.
+
+Lemma lemma163 : forall (λs1 λs2: capset),
+  λs1 ∈ NONWRITABLE ->
+  λs2 ∈ NONWRITABLE ->
+  compatible_set λs1 λs2.
+Proof.
+intros λs1 λs2 [|[|[|]]] [|[|[|]]];
+
+solve [ eapply lemma48; eauto
+      | apply lemma52; auto
+      | apply lemma73, lemma52; auto].
+Qed.
+
+Lemma lemma164 : forall λs (κs: list cap) (κ: cap),
+  λs ∘ (κ::κs) = λs ∘ κ ∘ κs.
+Proof. auto. Qed.
+
+Lemma lemma165 : forall (λs: capset) (κs: list cap),
+  λs ∈ STABLE ->
+  val ∈ κs \/ box ∈ κs ->
+  λs ∘ κs ∈ NONWRITABLE.
+Proof.
+intros.
+generalize dependent λs.
+induction κs; intros.
+- destruct H0; destruct H0.
+- rewrite lemma164.
+  destruct H0;
+  ( destruct H0; [ subst; apply lemma155; tauto | apply IHκs; auto ] ).
+Qed.
+
+Lemma lemma177 {A} : forall (x: A) (y: A),
+  x <> y -> not (x ∈ [y]).
+Proof. auto. Qed.
+Hint Resolve lemma177.
+
+Lemma lemma178 {A} : forall (x: A) (xs ys: list A),
+  not (x ∈ xs) ->
+  not (x ∈ ys) ->
+  not (x ∈ xs ++ ys).
+Proof.
+intros.
+intro; subst.
+destruct in_app_or with A xs ys x; auto.
+Qed.
+Hint Resolve lemma178.
+
+Lemma lemma179 {A} : forall (x y: A) (xs: list A),
+  not (y ∈ xs) ->
+  x <> y ->
+  not (y ∈ xs ++ [x]).
+Proof. eauto. Qed.
+Hint Resolve lemma179.
+
+Lemma lemma180 : forall (κ: cap) (κs: list cap),
+  [unalias κ] ∘ κs ∈ BOX ->
+  κ = box \/ box ∈ κs.
+Proof.
+intros.
+induction κs as [|κ'] using rev_ind; auto.
+- left. apply lemma77. auto.
+- rewrite lemma19 in *.
+  destruct_stable ([unalias κ] ∘ κs) by auto.
+  + destruct_group_adapt iso κ' box;
+    [ apply H | apply H0 | auto..].
+  + destruct_group_adapt trn κ' box;
+    [ apply H | apply H0 | auto..].
+  + destruct_group_adapt ref κ' box;
+    [ apply H | apply H0 | auto..].
+  + destruct_group_adapt val κ' box;
+    [ apply H | apply H0 | auto..].
+  + destruct IHκs; auto.
+  + destruct_group_adapt tag κ' box;
+    [ apply H | apply H0 | auto..].
+  + exfalso.
+    apply lemma36 with (([unalias κ] ∘ κs) ∘ κ') box; auto.
+    apply lemma23; auto.
+Qed.
+
+Lemma lemma181 : forall (κ: cap) (κs: list cap),
+  [unalias κ] ∘ κs ∈ REF ∪ BOX ->
+  κ <> val /\ not (val ∈ κs).
+Proof.
+intros.
+induction κs as [|κ'] using rev_ind; auto.
+- destruct H.
+  + (replace' κ with ref by (apply lemma77; auto)); auto.
+  + (replace' κ with box by (apply lemma77; auto)); auto.
+- rewrite lemma19 in *.
+  destruct H;
+  destruct_stable ([unalias κ] ∘ κs) by auto.
+  + destruct_group_adapt iso κ' ref;
+    [ apply H | apply H0 | auto..].
+  + destruct_group_adapt trn κ' ref;
+    [ apply H | apply H0 | auto..].
+  + destruct_group_adapt ref κ' ref;
+    [ apply H | apply H0 | auto..].
+    destruct IHκs; auto.
+  + destruct_group_adapt val κ' ref;
+    [ apply H | apply H0 | auto..].
+  + destruct_group_adapt box κ' ref;
+    [ apply H | apply H0 | auto..]; subst;
+    destruct IHκs; auto.
+  + destruct_group_adapt tag κ' ref;
+    [ apply H | apply H0 | auto..].
+  + exfalso.
+    apply lemma36 with (([unalias κ] ∘ κs) ∘ κ') ref; auto.
+    apply lemma23; auto.
+  + destruct_group_adapt iso κ' box;
+    [ apply H | apply H0 | auto..].
+  + destruct_group_adapt trn κ' box;
+    [ apply H | apply H0 | auto..].
+  + destruct_group_adapt ref κ' box;
+    [ apply H | apply H0 | auto..];
+    destruct IHκs; auto.
+  + destruct_group_adapt val κ' box;
+    [ apply H | apply H0 | auto..].
+  + destruct_group_adapt box κ' box;
+    [ apply H | apply H0 | auto..]; subst;
+    destruct IHκs; auto.
+  + destruct_group_adapt tag κ' box;
+    [ apply H | apply H0 | auto..].
+  + exfalso.
+    apply lemma36 with (([unalias κ] ∘ κs) ∘ κ') box; auto.
+    apply lemma23; auto.
+Qed.
+
+Lemma lemma182 : forall (λs: capset) (κ: cap),
+  λs ∈ BOX ∪ TAG ∪ BOT ->
+  κ <> val ->
+  λs ∘ κ ∈ BOX ∪ TAG ∪ BOT.
+Proof.
+intros.
+destruct H as [|[|]];
+destruct κ;
+solve [ left; eapply lemma62; eauto
+      | right; left; eapply lemma62; eauto
+      | right; right; eapply lemma22; eauto
+      | right; right; eapply lemma23; eauto
+      | elim H0; auto ].
+Qed.
+
+Lemma lemma183 {A} : forall (x y: A) (xs: list A),
+  not (y ∈ xs ++ [x]) ->
+  x <> y.
+Proof.
+intros.
+intro; subst.
+apply H. auto.
+Qed.
+Hint Resolve lemma183.
+
+Lemma lemma184 : forall (λs: capset) (κs: list cap),
+  λs ∈ BOX ∪ TAG ∪ BOT ->
+  not (val ∈ κs) ->
+  λs ∘ κs ∈ BOX ∪ TAG ∪ BOT.
+Proof.
+intros.
+induction κs as [|κ0] using rev_ind; auto.
+rewrite lemma19.
+apply lemma182.
+- apply IHκs. auto.
+- eauto.
+Qed.
+
+Lemma lemma185 : forall (λs: capset) (κ: cap),
+  λs ∈ REF ∪ BOX ∪ TAG ∪ BOT ->
+  κ = box \/ κ = tag ->
+  λs ∘ κ ∈ BOX ∪ TAG ∪ BOT.
+Proof.
+intros.
+destruct H0; subst;
+destruct H as [|].
+- left; eapply lemma62; eauto.
+- apply lemma182; eauto.
+- right; left; eapply lemma62; eauto.
+- apply lemma182; eauto.
+Qed.
+
+Lemma lemma186 : forall (λs1 λs2: capset),
+  λs1 ∈ BOX ∪ TAG ∪ BOT ->
+  λs2 ∈ TRN ∪ REF ∪ VAL ∪ BOX ∪ TAG ∪ BOT ->
+  compatible_set λs1 λs2.
+Proof.
+intros λs1 λs2 [|[|]] [|[|[|[|[|]]]]];
+
+solve [ eapply lemma48; eauto
+      | apply lemma52; auto
+      | apply lemma73, lemma52; auto].
+Qed.
+
+Lemma lemma188 : forall (λs: capset) (λ: ecap),
+  λs ∈ STABLE ->
+  safe_to_write λ box ->
+  compatible_set λs ([C (alias λ)]) ->
+  λs ∈ REF ∪ BOX ∪ TAG ∪ BOT.
+Proof.
+intros.
+inversion H0; subst; unfold alias in H1.
+- right; right; apply lemma114; auto.
+- right; apply lemma115; auto.
+- apply (lemma64 ref) with [C ref]; auto.
+Qed.
+
+Lemma lemma189 : forall (λs: capset) (κ: cap),
+  λs ∈ STABLE ->
+  λs ∘ κ ∈ BOX ->
+  (λs ∈ BOX /\ (κ = trn \/ κ = ref \/ κ = box)) \/
+  (λs ∈ REF /\ (κ = box)).
+Proof.
+intros.
+(destruct_stable λs by auto);
+solve [ epose (lemma62a _ _ _ box H1 H0); inversion g
+      | epose (lemma62a _ _ _ box H1 H0); inversion g; subst; auto
+      | exfalso; apply lemma36 with (λs ∘ κ) box; [| apply lemma23]; auto ].
+Qed.
+
+Lemma lemma187 {A} : forall (P: A -> Prop),
+  forall x, x ∈ [] -> P x.
+Proof. intros; inversion H. Qed.
+
+Lemma lemma191 {A} : forall (P: A -> Prop) (xs ys: list A),
+  (forall x, x ∈ xs -> P x) ->
+  (forall x, x ∈ ys -> P x) ->
+  (forall x, x ∈ xs ++ ys -> P x).
+Proof.
+intros.
+destruct in_app_or with A xs ys x; auto.
+Qed.
+
+Lemma lemma192 {A} : forall (P: A -> Prop) (x: A),
+  P x -> (forall y, y ∈ [x] -> P y).
+Proof. intros; replace y with x; auto. Qed.
+
+Lemma lemma200 : forall (λs: capset) (κs: list cap),
+  λs ∈ STABLE ->
+  λs ∘ κs ∈ BOX ->
+  (λs ∈ BOX /\ forall κ, κ ∈ κs -> κ = trn \/ κ = ref \/ κ = box) \/
+  exists κs' κs'', (κs = κs' ++ [box] ++ κs'' /\ λs ∘ κs' ∈ REF /\ forall κ, κ ∈ κs'' -> κ = trn \/ κ = ref \/ κ = box).
+Proof.
+intros.
+induction κs as [|κ] using rev_ind.
+- left. split. auto. apply lemma187.
+- rewrite lemma19 in *.
+  destruct lemma189 with (λs ∘ κs) κ as [[? ?]|[? ?]]; auto.
+  + destruct IHκs as [[? ?]|[κs' [κs'' [? [? ?]]]]]; auto.
+    * left; split; [| apply lemma191; [| apply lemma192]]; auto.
+    * right.
+      eexists κs'; eexists (κs''++[κ]).
+      split; [|split].
+      -- subst κs; repeat rewrite <- app_assoc; auto.
+      -- auto.
+      -- apply lemma191; [| apply lemma192]; auto.
+  + right.
+    eexists κs; eexists [].
+    split; [subst κ|split]; auto.
+Qed.
+
+Lemma lemma201 : forall (λs: capset) (κ: cap),
+  λs ∈ BOX ∪ TAG ∪ BOT ->
+  κ = trn \/ κ = ref \/ κ = box ->
+  λs ∘ κ ∈ BOX ∪ TAG ∪ BOT.
+Proof.
+intros.
+destruct H0 as [|[|]]; subst;
+destruct H as [|[|]];
+try solve [ left; eapply lemma62; eauto
+      | right; left; eapply lemma62; eauto
+      | right; right; eapply lemma22; eauto
+      | right; right; eapply lemma23; eauto ].
+Qed.
+
+Lemma lemma202 : forall (λs: capset) (κs: list cap),
+  λs ∈ BOX ∪ TAG ∪ BOT ->
+  (forall κ, κ ∈ κs -> κ = trn \/ κ = ref \/ κ = box) ->
+  λs ∘ κs ∈ BOX ∪ TAG ∪ BOT.
+Proof.
+intros.
+induction κs as [|κ] using rev_ind; auto.
+rewrite lemma19.
+apply lemma201; auto.
+Qed.
+
+Lemma lemma203 : forall λs κs κs',
+  λs ∘ (κs++κs') = λs ∘ κs ∘ κs'.
+Proof.
+intros. unfold_classes. unfold combine. rewrite fold_left_app. auto.
+Qed.
+
+Lemma lemma204 : forall (λs: capset) (κs κs': list cap),
+  λs ∘ κs ∈ REF ∪ BOX ∪ TAG ∪ BOT ->
+  (forall κ, κ ∈ κs' -> κ = trn \/ κ = ref \/ κ = box) ->
+  λs ∘ (κs ++ [box] ++ κs') ∈ BOX ∪ TAG ∪ BOT.
+Proof.
+intros.
+rewrite lemma203; unfold app; rewrite lemma164.
+apply lemma202; auto.
+apply lemma185; auto.
+Qed.
+
+Lemma lemma205 : [C ref] ∈ WRITABLE.
+Proof.
+unfold WRITABLE.
+right; right. auto.
+Qed.
+Hint Resolve lemma205.
+
+Lemma lemma206 : forall (λs: capset) (κs: list cap),
+  λs ∈ WRITABLE ->
+  λs ∘ κs ∈ TRN ∪ REF ∪ VAL ∪ BOX ∪ TAG ∪ BOT ->
+  [C ref] ∘ κs ∈ TRN ∪ REF ∪ VAL ∪ BOX ∪ TAG ∪ BOT.
+Proof.
+intros.
+destruct_stable ([C ref] ∘ κs); auto.
+destruct H0 as [|[|[|[|[|]]]]];
+exfalso;
+solve [ eapply lemma105; [ apply H0 | apply lemma86 | .. ]; auto
+      | eapply lemma36; [ apply lemma86 | apply H0 | .. ]; auto ].
+all: finish.
+Qed.
+
 
 Lemma lemmaB1 : forall (λs: capset) (κs1 κs3 κs4: list cap) (κ κ2: cap),
   λs ∈ WRITABLE ->
@@ -1493,161 +1967,6 @@ apply lemma134; auto.
 
 Qed.
 
-Lemma lemma150 : forall (κ: cap) (κs: list cap),
-  [unalias κ] ∘ κs ∈ VAL ->
-  (κ = val \/ κ = box) \/ exists κ', (κ' ∈ κs /\ (κ' = val \/ κ' = box)).
-Proof.
-Admitted.
-
-Lemma lemma151 : forall (κ κ': cap),
-  κ = val \/ κ = box ->
-  subcap (C κ) (C κ') ->
-  κ' = val \/ κ' = box \/ κ' = tag.
-Proof.
-intros.
-inversion H; inversion H0; subst; auto.
-Qed.
-
-Lemma lemma152 : forall (λs: capset) (κ: cap),
-  λs ∈ NONWRITABLE ->
-  λs ∘ κ ∈ NONWRITABLE.
-Proof.
-intros.
-destruct H as [|[|[|]]];
-destruct κ;
-try solve [ left; eapply lemma62; eauto
-      | right; left; eapply lemma62; eauto
-      | right; right; left; eapply lemma62; eauto
-      | right; right; right; eapply lemma22; eauto
-      | right; right; right; eapply lemma23; eauto ].
-Qed.
-
-Lemma lemma153 : forall (λs: capset) (κs: list cap),
-  λs ∈ NONWRITABLE ->
-  λs ∘ κs ∈ NONWRITABLE.
-Proof.
-intros.
-induction κs as [|κ0] using rev_ind; auto.
-rewrite lemma19. apply lemma152. auto.
-Qed.
-
-Lemma lemma154 : forall (λs: capset) (κ: cap),
-  λs ∈ STABLE ->
-  κ = val \/ κ = box \/ κ = tag ->
-  λs ∘ κ ∈ NONWRITABLE.
-Proof.
-Admitted.
-
-Lemma lemma155 : forall (λs: capset) (κ: cap) (κs: list cap),
-  λs ∈ STABLE ->
-  κ = val \/ κ = box \/ κ = tag ->
-  λs ∘ κ ∘ κs ∈ NONWRITABLE.
-Proof.
-intros; apply lemma153; apply lemma154; auto.
-Qed.
-
-Lemma lemma156: forall (λs: capset) (κ: cap),
-  λs ∈ STABLE ->
-  λs ∘ κ ∈ BOT ->
-  λs ∈ TAG ∪ BOT.
-Proof.
-intros.
-destruct_stable λs by auto.
-6-7: finish.
-
-all:
-exfalso;
-destruct κ;
-(eapply lemma36; [| apply H0]);
-eapply lemma62; eauto.
-Qed.
-
-Lemma lemma160 : forall (λs: capset) (κ: cap),
-  λs ∈ STABLE ->
-  λs ∘ κ ∈ NONWRITABLE ->
-  λs ∈ NONWRITABLE \/ (κ = val \/ κ = box \/ κ = tag).
-Proof.
-intros.
-destruct_stable λs by auto.
-4-7: finish.
-
-- destruct H0 as [|[|[|]]].
-  + destruct_group_adapt iso κ val; eauto.
-  + destruct_group_adapt iso κ box; eauto.
-  + destruct_group_adapt iso κ tag; eauto.
-  + assert (λs ∈ TAG ∪ BOT) by (apply lemma156 with κ; auto); finish.
-
-- destruct H0 as [|[|[|]]].
-  + destruct_group_adapt trn κ val; eauto.
-  + destruct_group_adapt trn κ box; eauto.
-  + destruct_group_adapt trn κ tag; eauto.
-  + assert (λs ∈ TAG ∪ BOT) by (apply lemma156 with κ; auto); finish.
-
-- destruct H0 as [|[|[|]]].
-  + destruct_group_adapt ref κ val; eauto.
-  + destruct_group_adapt ref κ box; eauto.
-  + destruct_group_adapt ref κ tag; eauto.
-  + assert (λs ∈ TAG ∪ BOT) by (apply lemma156 with κ; auto); finish.
-Qed.
-
-Lemma lemma161 : forall (λs: capset),
-  λs ∈ WRITABLE ->
-  λs ∈ NONWRITABLE ->
-  False.
-intros.
-destruct H0 as [|[|[|]]];
-destruct_writable λs; auto;
-solve [ eapply lemma105; [apply H0 | apply H1 | auto]
-      | eapply lemma36; eauto ].
-Qed.
-
-Lemma lemma162 : forall (λs: capset) (κs: list cap),
-  λs ∈ WRITABLE ->
-  λs ∘ κs ∈ NONWRITABLE ->
-  [C ref] ∘ κs ∈ NONWRITABLE.
-Proof.
-intros.
-induction κs as [|κ] using rev_ind; auto.
-- exfalso; apply lemma161 with λs; eauto.
-- rewrite lemma19 in *.
-  destruct lemma160 with (λs ∘ κs) κ; eauto.
-  + apply lemma152; auto.
-  + apply lemma154; auto.
-Qed.
-
-Lemma lemma163 : forall (λs1 λs2: capset),
-  λs1 ∈ NONWRITABLE ->
-  λs2 ∈ NONWRITABLE ->
-  compatible_set λs1 λs2.
-Proof.
-intros λs1 λs2 [|[|[|]]] [|[|[|]]];
-
-solve [ eapply lemma48; eauto
-      | apply lemma52; auto
-      | apply lemma73, lemma52; auto].
-Qed.
-
-Lemma lemma164 : forall λs (κs: list cap) (κ: cap),
-  λs ∘ (κ::κs) = λs ∘ κ ∘ κs.
-Proof. auto. Qed.
-
-Lemma lemma165 : forall (λs: capset) (κs: list cap) (κ: cap),
-  λs ∈ STABLE ->
-  κ ∈ κs ->
-  κ = val \/ κ = box ->
-  λs ∘ κs ∈ NONWRITABLE.
-Proof.
-intros.
-generalize dependent λs.
-induction κs; intros.
-- destruct H0.
-- rewrite lemma164.
-  destruct H0.
-  + subst.
-    apply lemma155; tauto.
-  + apply IHκs; auto.
-Qed.
-
 Lemma lemmaB4 : forall (λs: capset) (λ: ecap) (κs1 κs3 κs4: list cap) (κ κ2: cap),
   λs ∈ WRITABLE ->
   subcap (unalias κ) (C κ2) ->
@@ -1664,7 +1983,7 @@ assert (λs ∘ κs4 ∈ NONWRITABLE)
 assert ([C ref] ∘ κs4 ∈ NONWRITABLE)
   by (apply lemma162 with λs; auto).
 
-destruct lemma150 with κ κs3 as [|[κ' [? ?]]]; auto.
+destruct lemma150 with κ κs3 as [|]; auto.
 
 - (* κ = val \/ κ = box *)
   assert (κ2 = val \/ κ2 = box \/ κ2 = tag)
@@ -1673,10 +1992,72 @@ destruct lemma150 with κ κs3 as [|[κ' [? ?]]]; auto.
     by (apply lemma155; auto).
   apply lemma163; auto.
 
-- (* κ' ∈ κs3 /\ (κ' = val \/ κ' = box) *)
+- (* val ∈ κs3 \/ box ∈ κs3 *)
   assert ([C ref] ∘ κs1 ∘ κ2 ∘ κs3 ∈ NONWRITABLE)
-    by (apply lemma165 with κ'; auto; auto).
+    by (apply lemma165; auto; auto).
   apply lemma163; auto.
+Qed.
+
+Lemma lemmaB5 : forall (λs: capset) (λ: ecap) (κs1 κs3 κs4: list cap) (κ κ2: cap),
+  λs ∈ WRITABLE ->
+  subcap (unalias κ) (C κ2) ->
+  safe_to_write λ κ ->
+  compatible_set (λs ∘ κs4) ([unalias κ] ∘ κs3) ->
+  compatible_set (λs ∘ κs1) ([C (alias λ)]) ->
+  [unalias κ] ∘ κs3 ∈ BOX ->
+  compatible_set ([C ref] ∘ κs4) ([C ref] ∘ κs1 ∘ κ2 ∘ κs3).
+Proof.
+intros.
+
+assert (λs ∘ κs4 ∈ TRN ∪ REF ∪ VAL ∪ BOX ∪ TAG ∪ BOT)
+  by (apply (lemma64 box) with ([unalias κ] ∘ κs3); auto).
+
+assert ([C ref] ∘ κs4 ∈ TRN ∪ REF ∪ VAL ∪ BOX ∪ TAG ∪ BOT) by
+  (apply lemma206 with λs; auto).
+
+destruct lemma200 with [unalias κ] κs3 as [[? ?]|[κs3' [κs3'' [? [? ?]]]]]; auto.
+- replace' κ with box by (apply lemma77; auto).
+
+  assert (κ2 = box \/ κ2 = tag)
+    by (inversion H0; auto).
+
+  assert (λs ∘ κs1 ∈ REF ∪ BOX ∪ TAG ∪ BOT)
+   by (eapply lemma188 with (λ:=λ); auto).
+
+  assert ([C ref] ∘ κs1 ∈ REF ∪ BOX ∪ TAG ∪ BOT)
+    by (apply lemma133 with λs; auto).
+
+  assert ([C ref] ∘ κs1 ∘ κ2 ∈ BOX ∪ TAG ∪ BOT)
+    by (apply lemma185; auto).
+
+  assert ([C ref] ∘ κs1 ∘ κ2 ∘ κs3 ∈ BOX ∪ TAG ∪ BOT)
+    by (apply lemma202; auto).
+
+  apply lemma73, lemma186; auto.
+
+- assert ([unalias κ] ∈ REF /\ forall κ, κ ∈ κs3' -> κ = ref) as []
+    by (apply lemma91; auto).
+  replace' κ with ref by (apply lemma77; auto).
+
+  assert (κ2 = ref \/ κ2 = box \/ κ2 = tag)
+    by (inversion H0; tauto).
+
+  assert (λs ∘ κs1 ∈ REF ∪ BOX ∪ TAG ∪ BOT)
+    by (apply lemma135 with λ; auto).
+
+  assert ([C ref] ∘ κs1 ∈ REF ∪ BOX ∪ TAG ∪ BOT)
+    by (apply lemma133 with λs; auto).
+
+  assert ([C ref] ∘ κs1 ∘ κ2 ∈ REF ∪ BOX ∪ TAG ∪ BOT)
+    by (apply lemma100; auto).
+
+  assert ([C ref] ∘ κs1 ∘ κ2 ∘ κs3' ∈ REF ∪ BOX ∪ TAG ∪ BOT)
+    by (apply lemma103; auto).
+
+  assert ([C ref] ∘ κs1 ∘ κ2 ∘ κs3 ∈ BOX ∪ TAG ∪ BOT)
+    by (subst κs3; apply lemma204; auto).
+
+  apply lemma73, lemma186; auto.
 Qed.
 
 Lemma lemmaB : forall (λs: capset) (λ: ecap) (κs1 κs3 κs4: list cap) (κ κ2: cap),
@@ -1693,7 +2074,7 @@ destruct_stable ([unalias κ] ∘ κs3) by auto.
 - (* [unalias κ] ∘ κs3 ∈ TRN *) apply lemmaB2 with λs λ κ...
 - (* [unalias κ] ∘ κs3 ∈ REF *) apply lemmaB3 with λs λ κ...
 - (* [unalias κ] ∘ κs3 ∈ VAL *) apply lemmaB4 with λs λ κ...
-- (* [unalias κ] ∘ κs3 ∈ BOX *) admit.
+- (* [unalias κ] ∘ κs3 ∈ BOX *) apply lemmaB5 with λs λ κ...
 - (* [unalias κ] ∘ κs3 ∈ TAG *) admit.
 - (* [unalias κ] ∘ κs3 ∈ BOT *) admit.
 Admitted.
