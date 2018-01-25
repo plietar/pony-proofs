@@ -1,0 +1,48 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Module theories.CapSets</title>
+<meta name="description" content="Documentation of Coq module theories.CapSets" />
+<link href="coq2html.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="coq2html.js"> </script>
+</head>
+
+<body onload="hideAll('proofscript')">
+<h1 class="title">Module theories.CapSets</h1>
+<div class="coq">
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html">Coq.Lists.List</a></span>.<br/>
+<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="theories.Cap.html">Cap</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="theories.Notations.html">Notations</a></span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="capset">capset</a></span> := <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#list">list</a></span> <span class="id"><a href="theories.Cap.html#ecap">ecap</a></span>.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="compatible_set">compatible_set</a></span> (λ<span class="id">s</span> λ<span class="id">s</span>': <span class="id"><a href="theories.CapSets.html#capset">capset</a></span>) : <span class="kwd">Prop</span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">forall</span> λ λ', <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> λ λ<span class="id">s</span> -&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> λ' λ<span class="id">s</span>' -&gt; <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="theories.Cap.html#compatible">compatible</a></span> λ λ'.<br/>
+<br/>
+<span class="kwd">Fixpoint</span> <span class="id"><a name="combine_one">combine_one</a></span> (λ<span class="id">s</span>: <span class="id"><a href="theories.CapSets.html#capset">capset</a></span>) (κ: <span class="id"><a href="theories.Cap.html#cap">cap</a></span>) : <span class="id"><a href="theories.CapSets.html#capset">capset</a></span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> λ<span class="id">s</span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;| λ0::<span class="id">tail</span> =&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="theories.Cap.html#adapt">adapt</a></span> <span class="id"><a href="theories.Cap.html#read">read</a></span> λ0 κ, <span class="id"><a href="theories.Cap.html#adapt">adapt</a></span> <span class="id"><a href="theories.Cap.html#extract">extract</a></span> λ0 κ <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> λ<span class="id">r</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> λ<span class="id">e</span> =&gt; λ<span class="id">r</span> :: λ<span class="id">e</span> :: <span class="id"><a href="theories.CapSets.html#combine_one">combine_one</a></span> <span class="id">tail</span> κ<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> λ<span class="id">r</span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span> =&gt; λ<span class="id">r</span> :: <span class="id"><a href="theories.CapSets.html#combine_one">combine_one</a></span> <span class="id">tail</span> κ<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#Some">Some</a></span> λ<span class="id">e</span> =&gt; λ<span class="id">e</span> :: <span class="id"><a href="theories.CapSets.html#combine_one">combine_one</a></span> <span class="id">tail</span> κ<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span>, <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#None">None</a></span> =&gt; <span class="id"><a href="theories.CapSets.html#combine_one">combine_one</a></span> <span class="id">tail</span> κ<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kwd">end</span><br/>
+&nbsp;&nbsp;| <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span> =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span><br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="combine">combine</a></span> (λ<span class="id">s</span>: <span class="id"><a href="theories.CapSets.html#capset">capset</a></span>) (κ<span class="id">s</span>: <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#list">list</a></span> <span class="id"><a href="theories.Cap.html#cap">cap</a></span>) : <span class="id"><a href="theories.CapSets.html#capset">capset</a></span> :=<br/>
+&nbsp;&nbsp;<span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#fold_left">fold_left</a></span> <span class="id"><a href="theories.CapSets.html#combine_one">combine_one</a></span> κ<span class="id">s</span> λ<span class="id">s</span>.<br/>
+<br/>
+<span class="kwd">Instance</span> <span class="id"><a name="blob_combine_one">blob_combine_one</a></span> : <span class="id"><a href="theories.Notations.html#Blob">Blob</a></span> <span class="id"><a href="theories.CapSets.html#capset">capset</a></span> <span class="id"><a href="theories.Cap.html#cap">cap</a></span> := { <span class="id"><a href="theories.Notations.html#blob">blob</a></span> := <span class="id"><a href="theories.CapSets.html#combine_one">combine_one</a></span> }.<br/>
+<span class="kwd">Instance</span> <span class="id"><a name="blob_combine">blob_combine</a></span> : <span class="id"><a href="theories.Notations.html#Blob">Blob</a></span> <span class="id"><a href="theories.CapSets.html#capset">capset</a></span> (<span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#list">list</a></span> <span class="id"><a href="theories.Cap.html#cap">cap</a></span>) := { <span class="id"><a href="theories.Notations.html#blob">blob</a></span> := <span class="id"><a href="theories.CapSets.html#combine">combine</a></span> }.<br/>
+
+</div>
+<div class="footer"><hr/>Generated by <a href="https://github.com/xavierleroy/coq2html/">coq2html</div>
+</body>
+</html>

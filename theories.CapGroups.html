@@ -1,0 +1,70 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Module theories.CapGroups</title>
+<meta name="description" content="Documentation of Coq module theories.CapGroups" />
+<link href="coq2html.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="coq2html.js"> </script>
+</head>
+
+<body onload="hideAll('proofscript')">
+<h1 class="title">Module theories.CapGroups</h1>
+<div class="coq">
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html">Coq.Lists.List</a></span>.<br/>
+<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="theories.Cap.html">Cap</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="theories.CapSets.html">CapSets</a></span>.<br/>
+<span class="kwd">Require</span> <span class="kwd">Import</span> <span class="id"><a href="theories.Notations.html">Notations</a></span>.<br/>
+<br/>
+<span class="kwd">Inductive</span> <span class="id"><a name="cap_group">cap_group</a></span> := <span class="id"><a name="G">G</a></span> : <span class="id"><a href="theories.Cap.html#cap">cap</a></span> -&gt; <span class="id"><a href="theories.CapGroups.html#cap_group">cap_group</a></span>.<br/>
+<br/>
+<span class="kwd">Instance</span> <span class="id"><a name="elemOf_capgroup">elemOf_capgroup</a></span> : <span class="id"><a href="theories.Notations.html#ElemOf">ElemOf</a></span> <span class="id"><a href="theories.CapSets.html#capset">capset</a></span> <span class="id"><a href="theories.CapGroups.html#cap_group">cap_group</a></span> := <span class="kwd">fun</span> λ<span class="id">s</span> <span class="id">g</span> =&gt;<br/>
+&nbsp;&nbsp;<span class="kwd">match</span> <span class="id"><a href="theories.CapGroups.html#g">g</a></span> <span class="kwd">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id"><a href="theories.CapGroups.html#G">G</a></span> κ =&gt; <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> (<span class="id"><a href="theories.Cap.html#unalias">unalias</a></span> κ) λ<span class="id">s</span> /\ (<span class="kwd">forall</span> λ, <span class="id"><a href="http://coq.inria.fr/library/Coq.Lists.List.html#In">In</a></span> λ λ<span class="id">s</span> -&gt; <span class="id"><a href="theories.Cap.html#subcap">subcap</a></span> (<span class="id"><a href="theories.Cap.html#unalias">unalias</a></span> κ) λ)<br/>
+&nbsp;&nbsp;<span class="kwd">end</span>.<br/>
+<br/>
+<span class="kwd">Inductive</span> <span class="id"><a name="bottom">bottom</a></span> := <span class="id"><a name="BOT">BOT</a></span>.<br/>
+<span class="kwd">Instance</span> <span class="id"><a name="elemOf_bot">elemOf_bot</a></span> : <span class="id"><a href="theories.Notations.html#ElemOf">ElemOf</a></span> <span class="id"><a href="theories.CapSets.html#capset">capset</a></span> <span class="id"><a href="theories.CapGroups.html#bottom">bottom</a></span> :=<br/>
+&nbsp;&nbsp;<span class="kwd">fun</span> λ<span class="id">s</span> <span class="id">_</span> =&gt; λ<span class="id">s</span> = <span class="id"><a href="http://coq.inria.fr/library/Coq.Init.Datatypes.html#nil">nil</a></span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="ISO">ISO</a></span> := <span class="id"><a href="theories.CapGroups.html#G">G</a></span> <span class="id"><a href="theories.Cap.html#iso">iso</a></span>.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="TRN">TRN</a></span> := <span class="id"><a href="theories.CapGroups.html#G">G</a></span> <span class="id"><a href="theories.Cap.html#trn">trn</a></span>.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="REF">REF</a></span> := <span class="id"><a href="theories.CapGroups.html#G">G</a></span> <span class="id"><a href="theories.Cap.html#ref">ref</a></span>.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="VAL">VAL</a></span> := <span class="id"><a href="theories.CapGroups.html#G">G</a></span> <span class="id"><a href="theories.Cap.html#val">val</a></span>.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="BOX">BOX</a></span> := <span class="id"><a href="theories.CapGroups.html#G">G</a></span> <span class="id"><a href="theories.Cap.html#box">box</a></span>.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="TAG">TAG</a></span> := <span class="id"><a href="theories.CapGroups.html#G">G</a></span> <span class="id"><a href="theories.Cap.html#tag">tag</a></span>.<br/>
+<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="STABLE">STABLE</a></span> := <span class="id"><a href="theories.CapGroups.html#ISO">ISO</a></span> ∪ <span class="id"><a href="theories.CapGroups.html#TRN">TRN</a></span> ∪ <span class="id"><a href="theories.CapGroups.html#REF">REF</a></span> ∪ <span class="id"><a href="theories.CapGroups.html#VAL">VAL</a></span> ∪ <span class="id"><a href="theories.CapGroups.html#BOX">BOX</a></span> ∪ <span class="id"><a href="theories.CapGroups.html#TAG">TAG</a></span> ∪ <span class="id"><a href="theories.CapGroups.html#BOT">BOT</a></span>.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="READABLE">READABLE</a></span> := <span class="id"><a href="theories.CapGroups.html#ISO">ISO</a></span> ∪ <span class="id"><a href="theories.CapGroups.html#TRN">TRN</a></span> ∪ <span class="id"><a href="theories.CapGroups.html#REF">REF</a></span> ∪ <span class="id"><a href="theories.CapGroups.html#VAL">VAL</a></span> ∪ <span class="id"><a href="theories.CapGroups.html#BOX">BOX</a></span>.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="WRITABLE">WRITABLE</a></span> := <span class="id"><a href="theories.CapGroups.html#ISO">ISO</a></span> ∪ <span class="id"><a href="theories.CapGroups.html#TRN">TRN</a></span> ∪ <span class="id"><a href="theories.CapGroups.html#REF">REF</a></span>.<br/>
+<span class="kwd">Definition</span> <span class="id"><a name="NONWRITABLE">NONWRITABLE</a></span> := <span class="id"><a href="theories.CapGroups.html#VAL">VAL</a></span> ∪ <span class="id"><a href="theories.CapGroups.html#BOX">BOX</a></span> ∪ <span class="id"><a href="theories.CapGroups.html#TAG">TAG</a></span> ∪ <span class="id"><a href="theories.CapGroups.html#BOT">BOT</a></span>.<br/>
+<br/>
+<span class="kwd">Ltac</span> <span class="id">destruct_READABLE</span> <span class="id">H</span> := <span class="tactic">destruct</span> <span class="id">H</span> <span class="kwd">as</span> [|[|[|[|]]]].<br/>
+<span class="kwd">Ltac</span> <span class="id">destruct_STABLE</span> <span class="id">H</span> := <span class="tactic">destruct</span> <span class="id">H</span> <span class="kwd">as</span> [|[|[|[|[|[|]]]]]].<br/>
+<span class="kwd">Ltac</span> <span class="id">destruct_WRITABLE</span> <span class="id">H</span> := <span class="tactic">destruct</span> <span class="id">H</span> <span class="kwd">as</span> [|[|]].<br/>
+<br/>
+<span class="kwd">Tactic</span> <span class="kwd">Notation</span> "<span class="id">destruct_stable</span>" <span class="id">constr</span>(<span class="id">x</span>) "<span class="tactic">by</span>" <span class="id">tactic</span>(<span class="id">tac</span>) :=<br/>
+&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">x</span> ∈ <span class="id"><a href="theories.CapGroups.html#STABLE">STABLE</a></span>) <span class="kwd">as</span> ?<span class="id">h</span> <span class="tactic">by</span> <span class="id">tac</span>; <span class="tactic">destruct</span> <span class="id">h</span> <span class="kwd">as</span> [|[|[|[|[|[|]]]]]].<br/>
+<br/>
+<span class="kwd">Tactic</span> <span class="kwd">Notation</span> "<span class="id">destruct_stable</span>" <span class="id">constr</span>(<span class="id">x</span>) :=<br/>
+&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">x</span> ∈ <span class="id"><a href="theories.CapGroups.html#STABLE">STABLE</a></span>) <span class="kwd">as</span> ?<span class="id">h</span>; [ | <span class="tactic">destruct</span> <span class="id">h</span> <span class="kwd">as</span> [|[|[|[|[|[|]]]]]] ].<br/>
+<br/>
+<span class="kwd">Tactic</span> <span class="kwd">Notation</span> "<span class="id">destruct_readable</span>" <span class="id">constr</span>(<span class="id">x</span>) "<span class="tactic">by</span>" <span class="id">tactic</span>(<span class="id">tac</span>) :=<br/>
+&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">x</span> ∈ <span class="id"><a href="theories.CapGroups.html#READABLE">READABLE</a></span>) <span class="kwd">as</span> ?<span class="id">h</span> <span class="tactic">by</span> <span class="id">tac</span>; <span class="tactic">destruct</span> <span class="id">h</span> <span class="kwd">as</span> [|[|[|[|]]]].<br/>
+<br/>
+<span class="kwd">Tactic</span> <span class="kwd">Notation</span> "<span class="id">destruct_readable</span>" <span class="id">constr</span>(<span class="id">x</span>) :=<br/>
+&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">x</span> ∈ <span class="id"><a href="theories.CapGroups.html#READABLE">READABLE</a></span>) <span class="kwd">as</span> ?<span class="id">h</span>; [ | <span class="tactic">destruct</span> <span class="id">h</span> <span class="kwd">as</span> [|[|[|[|]]]] ].<br/>
+<br/>
+<span class="kwd">Tactic</span> <span class="kwd">Notation</span> "<span class="id">destruct_writable</span>" <span class="id">constr</span>(<span class="id">x</span>) "<span class="tactic">by</span>" <span class="id">tactic</span>(<span class="id">tac</span>) :=<br/>
+&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">x</span> ∈ <span class="id"><a href="theories.CapGroups.html#WRITABLE">WRITABLE</a></span>) <span class="kwd">as</span> ?<span class="id">h</span> <span class="tactic">by</span> <span class="id">tac</span>; <span class="tactic">destruct</span> <span class="id">h</span> <span class="kwd">as</span> [|[|]].<br/>
+<br/>
+<span class="kwd">Tactic</span> <span class="kwd">Notation</span> "<span class="id">destruct_writable</span>" <span class="id">constr</span>(<span class="id">x</span>) :=<br/>
+&nbsp;&nbsp;<span class="tactic">assert</span> (<span class="id">x</span> ∈ <span class="id"><a href="theories.CapGroups.html#WRITABLE">WRITABLE</a></span>) <span class="kwd">as</span> ?<span class="id">h</span>; [ | <span class="tactic">destruct</span> <span class="id">h</span> <span class="kwd">as</span> [|[|]] ].<br/>
+
+</div>
+<div class="footer"><hr/>Generated by <a href="https://github.com/xavierleroy/coq2html/">coq2html</div>
+</body>
+</html>
